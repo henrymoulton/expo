@@ -1,18 +1,30 @@
-import { ReactNode, PureComponent, useMemo, createRef } from 'react';
+import { ReactNode, PureComponent, createRef, useRef, useEffect } from 'react';
 
 import NativeVideoModule from './NativeVideoModule';
 import NativeVideoView from './NativeVideoView';
 import { VideoPlayer, VideoSource, VideoViewProps } from './VideoView.types';
 
 export function useVideoPlayer(source: VideoSource): VideoPlayer {
-  return useMemo(() => {
-    if (typeof source === 'string') {
-      return new NativeVideoModule.VideoPlayer({
-        uri: source,
-      });
-    }
-    return new NativeVideoModule.VideoPlayer(source);
+  const playerRef = useRef<VideoPlayer | null>(null);
+  const currentSource = useRef(source);
+  const parsedSource = typeof source === 'string' ? { uri: source } : source;
+
+  useEffect(() => {
+    return () => {
+      playerRef.current?.release();
+      playerRef.current = null;
+    };
   }, []);
+
+  if (playerRef.current === null) {
+    playerRef.current = new NativeVideoModule.VideoPlayer(parsedSource);
+  } else if (currentSource.current !== source) {
+    playerRef.current.release();
+    playerRef.current = new NativeVideoModule.VideoPlayer(parsedSource);
+    currentSource.current = source;
+  }
+
+  return playerRef.current!;
 }
 
 /**

@@ -25,6 +25,7 @@ internal final class VideoPlayer: SharedRef<AVPlayer>, Hashable {
   deinit {
     NowPlayingManager.shared.unregisterPlayer(pointer)
     VideoManager.shared.unregister(videoPlayer: self)
+    pointer.replaceCurrentItem(with: nil)
   }
 
   /**
