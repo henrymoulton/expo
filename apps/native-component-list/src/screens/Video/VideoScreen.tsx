@@ -39,15 +39,12 @@ export default function VideoScreen() {
   const [allowPictureInPicture, setAllowPictureInPicture] = React.useState(true);
   const [startPictureInPictureAutomatically, setStartPictureInPictureAutomatically] =
     React.useState(false);
-  const [selectedSource, setSelectedSource] = React.useState<number>(0);
   const [showNativeControls, setShowNativeControls] = React.useState(true);
   const [requiresLinearPlayback, setRequiresLinearPlayback] = React.useState(false);
   const [staysActiveInBackground, setStaysActiveInBackground] = React.useState(false);
-  const player = useVideoPlayer(videoSources[selectedSource]);
+  const [currentSource, setCurrentSource] = React.useState(videoSources[0]);
 
-  useEffect(() => {
-    player.staysActiveInBackground = true;
-  }, []);
+  const player = useVideoPlayer(currentSource);
 
   const enterFullscreen = useCallback(() => {
     ref.current?.enterFullscreen();
@@ -63,15 +60,15 @@ export default function VideoScreen() {
 
   const seekBy = useCallback(() => {
     player.seekBy(10);
-  }, []);
+  }, [player]);
 
   const replay = useCallback(() => {
     player.replay();
-  }, []);
+  }, [player]);
 
   const toggleMuted = useCallback(() => {
     player.isMuted = !player.isMuted;
-  }, []);
+  }, [player]);
 
   const togglePictureInPicture = useCallback(() => {
     if (!isInPictureInPicture) {
@@ -86,12 +83,12 @@ export default function VideoScreen() {
       player.staysActiveInBackground = staysActive;
       setStaysActiveInBackground(staysActive);
     },
-    [staysActiveInBackground]
+    [staysActiveInBackground, player]
   );
-
   useEffect(() => {
     player.play();
-  }, []);
+    updateStaysActiveInBackground(true);
+  }, [player]);
 
   return (
     <View style={styles.contentContainer}>
@@ -123,10 +120,9 @@ export default function VideoScreen() {
           itemStyle={Platform.OS === 'ios' && { height: 150 }}
           style={styles.picker}
           mode="dropdown"
-          selectedValue={selectedSource}
+          selectedValue={videoSources.indexOf(currentSource)}
           onValueChange={(value: number) => {
-            setSelectedSource(value);
-            player.replace(videoSources[value]);
+            setCurrentSource(videoSources[value]);
           }}>
           {videoSources.map((source, index) => (
             <Picker.Item key={index} label={videoLabels[index]} value={index} />

@@ -1,4 +1,4 @@
-import { ReactNode, PureComponent } from 'react';
+import { ReactNode, PureComponent, DependencyList } from 'react';
 import { VideoPlayer, VideoSource, VideoViewProps } from './VideoView.types';
 export declare function useVideoPlayer(source: VideoSource): VideoPlayer;
 /**
@@ -28,4 +28,8 @@ export declare class VideoView extends PureComponent<VideoViewProps> {
     stopPictureInPicture(): any;
     render(): ReactNode;
 }
+/**
+ * Returns a shared object, which is automatically cleaned up when the component is unmounted.
+ */
+export declare function useReleasingSharedObject<T>(factory: () => T, dependencies: DependencyList): T;
 //# sourceMappingURL=VideoView.d.ts.map
