@@ -3,7 +3,7 @@ import NativeVideoModule from './NativeVideoModule';
 import NativeVideoView from './NativeVideoView';
 export function useVideoPlayer(source) {
     const parsedSource = typeof source === 'string' ? { uri: source } : source;
-    return useReleasingSharedObject(() => new NativeVideoModule.VideoPlayer(parsedSource), [parsedSource?.uri, parsedSource?.drm]);
+    return useReleasingSharedObject(() => new NativeVideoModule.VideoPlayer(parsedSource), [parsedSource?.uri, ...Object.values(parsedSource?.drm ?? {})]);
 }
 /**
  * Returns whether the current device supports Picture in Picture (PiP) mode.
@@ -67,9 +67,10 @@ function getPlayerId(player) {
 }
 /**
  * Returns a shared object, which is automatically cleaned up when the component is unmounted.
+ *
+ * TODO: when SharedObject type is added make T extend it
  */
-// TODO: when SharedObject type is added make T extend it
-export function useReleasingSharedObject(factory, dependencies) {
+function useReleasingSharedObject(factory, dependencies) {
     const objectRef = useRef(null);
     const isFastRefresh = useRef(false);
     const previousDependencies = useRef(dependencies);
@@ -77,22 +78,26 @@ export function useReleasingSharedObject(factory, dependencies) {
         objectRef.current = factory();
     }
     const object = useMemo(() => {
+        let newObject = objectRef.current;
+        const dependenciesAreEqual = previousDependencies.current?.length === dependencies.length &&
+            dependencies.every((value, index) => value === previousDependencies.current[index]);
         // If the dependencies have changed, release the previous object and create a new one, otherwise this has been called
-        // because of a fast-refresh and we don't want to release the object.
-        if (!previousDependencies.current.every((value, index) => value === dependencies[index])) {
-            objectRef.current.release();
-            objectRef.current = factory();
+        // because of a fast refresh, and we don't want to release the object.
+        if (!newObject || !dependenciesAreEqual) {
+            objectRef.current?.release();
+            newObject = factory();
+            objectRef.current = newObject;
             previousDependencies.current = dependencies;
         }
         else {
             isFastRefresh.current = true;
         }
-        return objectRef.current;
+        return newObject;
     }, dependencies);
     useEffect(() => {
         isFastRefresh.current = false;
         return () => {
-            // This will be called on every fast-refresh and on unmount, but we only want to release the player on unmount.
+            // This will be called on every fast refresh and on unmount, but we only want to release the object on unmount.
             if (!isFastRefresh.current && objectRef.current) {
                 objectRef.current.release();
             }
