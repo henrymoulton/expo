@@ -6,6 +6,7 @@
 #import <ExpoModulesCore/EXJSIConversions.h>
 #import <ExpoModulesCore/EXJSIUtils.h>
 #import <ExpoModulesCore/JSIUtils.h>
+#import <ExpoModulesCore/NativeModule.h>
 
 namespace expo {
 
@@ -134,3 +135,16 @@ jsi::Value makeCodedError(jsi::Runtime &runtime, NSString *code, NSString *messa
 }
 
 } // namespace expo
+
+@implementation EXJSIUtils
+
++ (nonnull EXJavaScriptObject *)createNativeModuleObject:(nonnull EXJavaScriptRuntime *)runtime
+                                                    name:(nonnull NSString *)moduleName
+{
+  std::shared_ptr<jsi::Object> nativeModule = std::make_shared<jsi::Object>(
+    expo::NativeModule::createInstance(*[runtime get], [moduleName UTF8String])
+  );
+  return [[EXJavaScriptObject alloc] initWith:nativeModule runtime:runtime];
+}
+
+@end
